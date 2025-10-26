@@ -1,61 +1,185 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Client Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Project Overview
 
-## About Laravel
+This project is a **Client Management System** built with **Laravel 12**.
+It allows managing clients, importing/exporting CSV data, detecting duplicates, and filtering/sorting client data.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Features Implemented
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+* Import large CSV files and detect duplicates automatically.
+* List clients with search, filter, and sorting functionality.
+* Show client details along with their duplicate entries.
+* Export clients to CSV, with an option to include duplicates only.
+* Support for massive CSV imports for stress testing.
+* Unit and feature tests for all major functionalities.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Prerequisites
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+* **PHP**: >= 8.2
+* **Laravel**: 12
+* **Database**: MySQL (development)
+* Composer for PHP dependencies.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Installation Instructions
 
-## Laravel Sponsors
+1. **Clone the repository**
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+   ```bash
+   git clone <repository-url>
+   cd <project-directory>
+   ```
 
-### Premium Partners
+2. **Install PHP dependencies**
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+   ```bash
+   composer install
 
-## Contributing
+3. **Copy `.env` file**
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+   ```bash
+   cp .env.example .env
+   ```
 
-## Code of Conduct
+4. **Set environment variables**
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+   * Update `.env` with your database credentials:
 
-## Security Vulnerabilities
+     ```
+     DB_CONNECTION=mysql
+     DB_HOST=127.0.0.1
+     DB_PORT=3306
+     DB_DATABASE=your_database
+     DB_USERNAME=root
+     DB_PASSWORD=
+     ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+5. **Generate application key**
+
+   ```bash
+   php artisan key:generate
+   ```
+
+---
+
+## Database Setup
+
+1. **Run migrations**
+
+   ```bash
+   php artisan migrate
+   ```
+
+2. **Run seeders (optional)**
+
+   ```bash
+   php artisan db:seed
+   ```
+
+---
+
+## Running the Application
+
+1. **Start Laravel server**
+
+   ```bash
+   php artisan serve
+   ```
+2. **Access application**
+
+   ```
+   http://127.0.0.1:8000
+   ```
+
+---
+
+## Running Tests
+
+* **Run all tests**
+
+  ```bash
+  php artisan test
+  ```
+* **Run only Feature tests**
+
+  ```bash
+  php artisan test --testsuite=Feature
+  ```
+* **Run only Unit tests**
+
+  ```bash
+  php artisan test --testsuite=Unit
+  ```
+
+> Note: Tests use **SQLite in-memory** database by default. Ensure `.env.testing` or `phpunit.xml` has:
+>
+> ```xml
+> <env name="DB_CONNECTION" value="mysql"/>
+><env name="DB_PORT" value="3306"/>
+><env name="DB_DATABASE" value="your_db"/>
+><env name="DB_USERNAME" value="your_username"/>
+><env name="DB_PASSWORD" value="your_secret"/>
+> ```
+
+---
+
+## API Documentation
+
+* **Import clients**: `POST /api/clients/import` (CSV upload)
+* **List clients**: `GET /api/clients`
+* **Show client details**: `GET /api/clients/{id}`
+* **Export clients**: `GET /api/clients/export?duplicates_only=1`
+* Supports CSV export with all clients or duplicates only.
+
+> You can import this collection into **Postman** for testing.
+
+---
+
+## Code Structure and Complex Logic
+
+* **ClientExportService**
+  Handles exporting clients to CSV. Supports filtering duplicates only.
+
+  * `export(ClientExportDTO $dto)`: Main function that builds query based on DTO.
+  * `toCsv($rows)`: Converts collection to CSV string.
+
+* **Duplicate Detection**
+
+  * Duplicate root entries are detected using SQL:
+
+    ```sql
+    SELECT MIN(id)
+    FROM clients
+    GROUP BY company_name, email, phone_number
+    HAVING COUNT(*) > 1;
+    ```
+  * Duplicates are those with `duplicate_group_id` set or matching a duplicate root.
+
+* **Tests**
+
+  * Feature tests cover importing, exporting, listing, filtering, and duplicates.
+  * PHPUnit 12 attributes are used instead of deprecated doc-block `@test`.
+
+---
+
+## Architecture Decisions & Trade-offs
+
+* **Service-based architecture**: All client-related logic (index, show, export) handled in a **dedicated service** for reusability.
+* **DTOs**: Filter and export criteria are passed via **Data Transfer Objects**, decoupling controllers from business logic.
+* **CSV Export**: Stored in `storage/app/private/exports` and returned via download.
+* **MYSQL for testing**: To speed up writing script
+---
+
+## Notes
+
+* Make sure all client duplicates have the **same email and phone number** for proper detection.
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+[MIT License](LICENSE)
