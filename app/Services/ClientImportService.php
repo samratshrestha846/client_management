@@ -1,12 +1,13 @@
 <?php
+
 namespace App\Services;
 
 use App\DTOs\ClientImportRowDTO;
 use App\Models\Client;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class ClientImportService
 {
@@ -14,179 +15,149 @@ class ClientImportService
 
     public function importCsv(UploadedFile $file, ?string $importBatchId = null): array
     {
-        $importBatchId = $importBatchId ?? (string) Str::uuid();
+        $importBatchId ??= (string) Str::uuid();
         $handle = fopen($file->getRealPath(), 'r');
+
         if (!$handle) {
             return ['error' => 'Unable to open uploaded file.'];
         }
 
-        $header = null;
-        $rowNum = 0;
-        $batch = [];
-        $insertedIds = [];
-        $failedRows = [];
-        $duplicateMap = [];
-        $rowToDuplicateGroup = [];
-
+        $header = $this->readHeader($handle);
         $existingKeys = $this->getExistingCanonicalKeyMap();
 
-        while (($raw = fgetcsv($handle, 0, ',')) !== false) {
+        $batch = [];
+        $failedRows = [];
+        $insertedIds = [];
+
+        $rowNum = 1;
+        while (($row = fgetcsv($handle, 0, ',')) !== false) {
             $rowNum++;
-            if ($rowNum === 1) {
-                $header = array_map(fn($h) => mb_strtolower(trim($h)), $raw);
-                continue;
-            }
-
-            $assoc = [];
-            foreach ($header as $i => $colName) {
-                $assoc[$colName] = $raw[$i] ?? null;
-            }
-
+            $assoc = $this->mapRowToAssoc($header, $row);
             $dto = new ClientImportRowDTO($assoc, $rowNum);
 
-            $validator = Validator::make($dto->toArray(), [
-                'company_name' => ['required', 'string', 'max:255'],
-                'email' => ['nullable', 'email', 'max:255'],
-                'phone_number' => ['nullable', 'string', 'max:50'],
-            ]);
-
-            if ($validator->fails()) {
-                $failedRows[$rowNum] = $validator->errors()->all();
+            if (!$this->validateRow($dto, $failedRows)) {
                 continue;
             }
 
             $canonical = Client::canonicalKey($dto->toArray());
 
             if (isset($existingKeys[$canonical])) {
-                $groupId = $existingKeys[$canonical];
-                $rowToDuplicateGroup[$rowNum] = $groupId;
-            } else {
-                if (isset($duplicateMap[$canonical])) {
-                    $groupId = $duplicateMap[$canonical][0];
-                    $rowToDuplicateGroup[$rowNum] = $groupId ?? null;
-                } else {
-                    $batch[] = [
-                        'company_name' => $dto->company_name,
-                        'email' => $dto->email,
-                        'phone_number' => $dto->phone_number,
-                        'import_batch_id' => $importBatchId,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                    $duplicateMap[$canonical] = [];
-                }
+                continue;
             }
 
+            $batch[] = $this->formatRowForInsert($dto, $importBatchId);
+
             if (count($batch) >= $this->batchSize) {
-                $this->flushBatchInsert($batch, $existingKeys, $duplicateMap, $insertedIds);
-                $batch = [];
+                $this->flushBatchInsert($batch, $existingKeys, $insertedIds);
             }
         }
 
-        if (count($batch) > 0) {
-            $this->flushBatchInsert($batch, $existingKeys, $duplicateMap, $insertedIds);
+        if ($batch) {
+            $this->flushBatchInsert($batch, $existingKeys, $insertedIds);
         }
 
         fclose($handle);
 
-        $duplicateGroups = $this->buildDuplicateGroups($importBatchId);
-
-        $importedCount = count($insertedIds);
-        $report = [
-            'imported_count' => $importedCount,
-            'failed_rows' => $failedRows,
-            'duplicate_groups' => $duplicateGroups,
+        return [
             'import_batch_id' => $importBatchId,
+            'imported_count' => count($insertedIds),
+            'failed_rows' => $failedRows,
+            'duplicate_groups' => $this->buildDuplicateGroups($importBatchId),
         ];
-
-        return $report;
     }
 
+    protected function readHeader($handle): array
+    {
+        $raw = fgetcsv($handle, 0, ',');
+        return array_map(fn($h) => mb_strtolower(trim($h)), $raw);
+    }
+
+    protected function mapRowToAssoc(array $header, array $row): array
+    {
+        $assoc = [];
+        foreach ($header as $i => $colName) {
+            $assoc[$colName] = $row[$i] ?? null;
+        }
+        return $assoc;
+    }
+
+    protected function validateRow(ClientImportRowDTO $dto, array &$failedRows): bool
+    {
+        $validator = Validator::make($dto->toArray(), [
+            'company_name' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'phone_number' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        if ($validator->fails()) {
+            $failedRows[$dto->rowNumber] = $validator->errors()->all();
+            return false;
+        }
+        return true;
+    }
+
+    protected function formatRowForInsert(ClientImportRowDTO $dto, string $importBatchId): array
+    {
+        return [
+            'company_name' => $dto->company_name,
+            'email' => $dto->email,
+            'phone_number' => $dto->phone_number,
+            'import_batch_id' => $importBatchId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
 
     protected function getExistingCanonicalKeyMap(): array
     {
         $map = [];
         Client::select('id', 'company_name', 'email', 'phone_number')
-            ->orderBy('id')
-            ->chunk(2000, function($rows) use (&$map) {
+            ->chunk(2000, function ($rows) use (&$map) {
                 foreach ($rows as $r) {
-                    $key = Client::canonicalKey([
-                        'company_name' => $r->company_name,
-                        'email' => $r->email,
-                        'phone_number' => $r->phone_number,
-                    ]);
-                    if (!isset($map[$key])) {
-                        $map[$key] = $r->id;
-                    }
+                    $map[Client::canonicalKey($r->toArray())] = $r->id;
                 }
             });
         return $map;
     }
 
-    protected function flushBatchInsert(array $batch, array &$existingKeys, array &$duplicateMap, array &$insertedIds)
+    protected function flushBatchInsert(array &$batch, array &$existingKeys, array &$insertedIds): void
     {
-        if (empty($batch)) {
-            return;
-        }
-
         DB::table('clients')->insert($batch);
 
         $importBatchId = $batch[0]['import_batch_id'] ?? null;
-        $fetched = Client::where('import_batch_id', $importBatchId)
-            ->orderBy('created_at', 'asc')
+        $inserted = Client::where('import_batch_id', $importBatchId)
+            ->orderByDesc('id')
+            ->take(count($batch))
             ->get();
 
-        foreach ($fetched as $f) {
-            $key = Client::canonicalKey([
-                'company_name' => $f->company_name,
-                'email' => $f->email,
-                'phone_number' => $f->phone_number,
-            ]);
-            if (!isset($existingKeys[$key])) {
-                if (empty($duplicateMap[$key])) {
-                    $existingKeys[$key] = $f->id;
-
-                    $duplicateMap[$key][] = $f->id;
-                } else {
-                    $rootId = $existingKeys[$key] ?? $duplicateMap[$key][0] ?? $f->id;
-                    $f->duplicate_group_id = $rootId;
-                    $f->saveQuietly();
-                    $duplicateMap[$key][] = $f->id;
-                }
-            } else {
-                $rootId = $existingKeys[$key];
-                $f->duplicate_group_id = $rootId;
-                $f->saveQuietly();
-                $duplicateMap[$key][] = $f->id;
-            }
-            $insertedIds[] = $f->id;
+        foreach ($inserted as $client) {
+            $key = Client::canonicalKey($client->toArray());
+            $existingKeys[$key] = $client->id;
+            $insertedIds[] = $client->id;
         }
+
+        $batch = [];
     }
 
-    protected function buildDuplicateGroups(string $importBatchId = null): array
+    protected function buildDuplicateGroups(?string $importBatchId = null): array
     {
         $groups = [];
 
-        $qb = Client::query();
+        $query = Client::query();
         if ($importBatchId) {
-            $qb->where('import_batch_id', $importBatchId);
+            $query->where('import_batch_id', $importBatchId);
         }
 
-        $qb->chunk(2000, function($rows) use (&$groups) {
+        $query->chunk(2000, function ($rows) use (&$groups) {
             foreach ($rows as $r) {
-                $key = Client::canonicalKey([
-                    'company_name' => $r->company_name,
-                    'email' => $r->email,
-                    'phone_number' => $r->phone_number,
-                ]);
+                $key = Client::canonicalKey($r->toArray());
                 $groups[$key][] = $r;
             }
         });
 
         $result = [];
-        foreach ($groups as $key => $members) {
+        foreach ($groups as $members) {
             if (count($members) > 1) {
-                usort($members, fn($a, $b) => $a->id <=> $b->id);
                 $rootId = $members[0]->id;
                 $result[$rootId] = array_map(fn($m) => $m->toArray(), $members);
             }
