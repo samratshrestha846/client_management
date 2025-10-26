@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\ClientExportDTO;
 use App\DTOs\ClientFilterDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ClientImportRequest;
+use App\Services\ClientExportService;
 use App\Services\ClientImportService;
 use App\Services\ClientIndexService;
 use App\Services\ClientShowService;
@@ -36,5 +38,13 @@ class ClientController extends Controller
     public function show($id, ClientShowService $service)
     {
         return response()->json($service->show($id));
+    }
+
+    public function export(Request $request, ClientExportService $service)
+    {
+        $dto = ClientExportDTO::fromRequest($request);
+        $path = $service->export($dto);
+
+        return response()->download($path)->deleteFileAfterSend(true);
     }
 }
