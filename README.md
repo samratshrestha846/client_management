@@ -177,6 +177,7 @@ It allows managing clients, importing/exporting CSV data, detecting duplicates, 
 ## Notes
 
 * Make sure all client duplicates have the **same email and phone number** for proper detection.
+* Please find the ClientManagement.postman_collection.json and clients_large_sample.csv files in the root folder will help you to test
 
 ---
 
