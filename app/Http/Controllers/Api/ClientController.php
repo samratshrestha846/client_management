@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\DTOs\ClientFilterDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ClientImportRequest;
 use App\Services\ClientImportService;
+use App\Services\ClientIndexService;
+use App\Services\ClientShowService;
+use Illuminate\Http\Request;
 
 class ClientController extends Controller
 {
@@ -21,5 +25,16 @@ class ClientController extends Controller
         $report = $this->importService->importCsv($file);
 
         return response()->json($report, 200);
+    }
+
+    public function index(Request $request, ClientIndexService $service)
+    {
+        $filter = ClientFilterDTO::fromRequest($request);
+        return response()->json($service->list($filter));
+    }
+
+    public function show($id, ClientShowService $service)
+    {
+        return response()->json($service->show($id));
     }
 }

@@ -10,4 +10,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('clients')->group(function () {
     Route::post('import', [ClientController::class, 'import']);
+    Route::get('', [ClientController::class, 'index']);
+    Route::get('{id}', [ClientController::class, 'show']);
 });
