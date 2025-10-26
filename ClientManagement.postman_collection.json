@@ -1,0 +1,199 @@
+{
+	"info": {
+		"_postman_id": "f1258f94-deb2-48f6-8729-2c656d978318",
+		"name": "ClientManagement",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "10147691",
+		"_collection_link": "https://crimson-eclipse-9194.postman.co/workspace/DitConnect~a905943e-aced-48c1-890a-5511b4fd6865/collection/10147691-f1258f94-deb2-48f6-8729-2c656d978318?action=share&source=collection_link&creator=10147691"
+	},
+	"item": [
+		{
+			"name": "ImportClient",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/samratshrestha/Downloads/clients_large_sample.csv"
+						}
+					]
+				},
+				"url": "http://127.0.0.1:8000/api/clients/import"
+			},
+			"response": []
+		},
+		{
+			"name": "allClient",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/samratshrestha/Downloads/clients_large_sample.csv"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/clients",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"clients"
+					],
+					"query": [
+						{
+							"key": "search",
+							"value": "himal",
+							"disabled": true
+						},
+						{
+							"key": "duplicates_only",
+							"value": "false",
+							"disabled": true
+						},
+						{
+							"key": "sort_by",
+							"value": "id",
+							"disabled": true
+						},
+						{
+							"key": "sort_direction",
+							"value": "desc",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "showClient",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/samratshrestha/Downloads/clients_large_sample.csv"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/clients/100149",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"clients",
+						"100149"
+					],
+					"query": [
+						{
+							"key": "search",
+							"value": "himal",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "exportClient",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/samratshrestha/Downloads/clients_large_sample.csv"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/clients/export?duplicates_only=false",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"clients",
+						"export"
+					],
+					"query": [
+						{
+							"key": "duplicates_only",
+							"value": "false"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
