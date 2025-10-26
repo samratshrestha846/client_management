@@ -13,11 +13,14 @@ class ClientExportService
         $query = Client::query();
 
         if ($dto->duplicatesOnly) {
-            $query->whereIn('id', function ($sub) {
-                $sub->selectRaw('MIN(id)')
-                    ->from('clients')
-                    ->groupBy('company_name', 'email', 'phone_number')
-                    ->havingRaw('COUNT(*) > 1');
+            $query->where(function($q) {
+                $q->whereNotNull('duplicate_group_id')
+                ->orWhereIn('id', function($sub) {
+                    $sub->selectRaw('MIN(id)')
+                        ->from('clients')
+                        ->groupBy('company_name', 'email', 'phone_number')
+                        ->havingRaw('COUNT(*) > 1');
+                });
             });
         }
 
